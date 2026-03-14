@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import type { User } from "@supabase/supabase-js";
+import type { SupabaseClient, User } from "@supabase/supabase-js";
 
 import { AdminDashboard } from "@/components/dashboard/admin-dashboard";
 import { InsuranceDashboard } from "@/components/dashboard/insurance-dashboard";
@@ -39,7 +39,8 @@ function getAdminSection(pathname: string): AdminSection | null {
 export function DashboardPage() {
   const pathname = usePathname();
   const router = useRouter();
-  const supabase = useMemo(() => createBrowserSupabaseClient(), []);
+  const [supabase, setSupabase] = useState<SupabaseClient<Database> | null>(null);
+  const [supabaseInitError, setSupabaseInitError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -47,6 +48,21 @@ export function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    try {
+      setSupabase(createBrowserSupabaseClient());
+    } catch (initError) {
+      setSupabaseInitError(
+        initError instanceof Error ? initError.message : "Failed to initialize Supabase client.",
+      );
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!supabase) {
+      return;
+    }
+
     let isMounted = true;
 
     const loadUser = async () => {
@@ -148,11 +164,15 @@ export function DashboardPage() {
   }, [adminSection, isLoading, pathname, role, router]);
 
   const handleSignOut = async () => {
+    if (!supabase) {
+      return;
+    }
+
     await supabase.auth.signOut();
     router.replace("/login");
   };
 
-  if (isLoading) {
+  if (isLoading || (!supabase && !supabaseInitError)) {
     return (
       <main className="py-12">
         <div className="container max-w-7xl">
@@ -163,6 +183,23 @@ export function DashboardPage() {
         </div>
       </main>
     );
+  }
+
+  if (supabaseInitError) {
+    return (
+      <main className="py-12">
+        <div className="container max-w-4xl">
+          <DashboardLoader
+            description={supabaseInitError}
+            title="Dashboard configuration error"
+          />
+        </div>
+      </main>
+    );
+  }
+
+  if (!supabase) {
+    return null;
   }
 
   if (role === "admin") {
