@@ -4,5 +4,9 @@ import { ProviderRoleDashboard } from "@/components/dashboard/provider-role-dash
 import { RoleDashboardPage } from "@/components/dashboard/role-dashboard-page";
 
 export default function ProviderDashboardPage() {
-  return <RoleDashboardPage role="provider">{(session) => <ProviderRoleDashboard session={session} />}</RoleDashboardPage>;
+  return (
+    <RoleDashboardPage role="provider">
+      <ProviderRoleDashboard />
+    </RoleDashboardPage>
+  );
 }

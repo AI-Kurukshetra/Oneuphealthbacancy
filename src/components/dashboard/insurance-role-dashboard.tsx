@@ -2,12 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import { useDashboardSession } from "@/components/dashboard/dashboard-session-context";
 import { DashboardLoader } from "@/components/dashboard/shared";
 import { Button } from "@/components/ui/button";
 import { Card, StatCard } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { fetchClaims, fetchConsentRecords, fetchPatient, fetchProvider, updateClaimStatus } from "@/lib/dashboard-api";
-import type { DashboardSession } from "@/lib/dashboard-api";
 import type { Claim, Consent, Patient, Provider } from "@/types/fhir";
 
 type EnrichedClaim = Claim & {
@@ -16,7 +16,8 @@ type EnrichedClaim = Claim & {
   provider: Provider | null;
 };
 
-export function InsuranceRoleDashboard({ session }: { session: DashboardSession }) {
+export function InsuranceRoleDashboard() {
+  const session = useDashboardSession();
   const [claims, setClaims] = useState<EnrichedClaim[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

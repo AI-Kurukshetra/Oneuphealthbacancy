@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
+import { useDashboardSession } from "@/components/dashboard/dashboard-session-context";
 import { DashboardLoader } from "@/components/dashboard/shared";
 import { Button } from "@/components/ui/button";
 import { Card, StatCard } from "@/components/ui/card";
@@ -23,7 +24,6 @@ import {
   grantConsent,
   revokeConsent,
 } from "@/lib/dashboard-api";
-import type { DashboardSession } from "@/lib/dashboard-api";
 import type { Alert, RiskScore } from "@/types/ai";
 import type { Database } from "@/types/database";
 import type { Claim, Consent, Encounter, Medication, Observation, Patient } from "@/types/fhir";
@@ -35,7 +35,8 @@ const consentSchema = z.object({
 
 type ConsentFormValues = z.infer<typeof consentSchema>;
 
-export function PatientRoleDashboard({ session }: { session: DashboardSession }) {
+export function PatientRoleDashboard() {
+  const session = useDashboardSession();
   const [patient, setPatient] = useState<Patient | null>(null);
   const [organizations, setOrganizations] = useState<Database["public"]["Tables"]["organizations"]["Row"][]>([]);
   const [encounters, setEncounters] = useState<Encounter[]>([]);

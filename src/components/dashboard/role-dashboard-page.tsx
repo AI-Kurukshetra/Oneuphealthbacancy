@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 
+import { DashboardSessionContext } from "@/components/dashboard/dashboard-session-context";
 import { DashboardLoader } from "@/components/dashboard/shared";
 import { RoleDashboardShell } from "@/components/dashboard/role-dashboard-shell";
 import { getDashboardSession, rolePath } from "@/lib/dashboard-api";
@@ -16,7 +17,7 @@ export function RoleDashboardPage({
   children,
   role,
 }: {
-  children: (session: DashboardSession) => ReactNode;
+  children: ReactNode;
   role: AllowedRole;
 }) {
   const router = useRouter();
@@ -92,12 +93,14 @@ export function RoleDashboardPage({
   }
 
   return (
-    <RoleDashboardShell
-      organizationName={session.organization?.name ?? null}
-      role={role}
-      userName={session.profile.full_name ?? session.user.email ?? "User"}
-    >
-      {children(session)}
-    </RoleDashboardShell>
+    <DashboardSessionContext.Provider value={session}>
+      <RoleDashboardShell
+        organizationName={session.organization?.name ?? null}
+        role={role}
+        userName={session.profile.full_name ?? session.user.email ?? "User"}
+      >
+        {children}
+      </RoleDashboardShell>
+    </DashboardSessionContext.Provider>
   );
 }

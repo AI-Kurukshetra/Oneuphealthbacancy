@@ -4,13 +4,13 @@ import { useDeferredValue, useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
+import { useDashboardSession } from "@/components/dashboard/dashboard-session-context";
 import { DashboardLoader } from "@/components/dashboard/shared";
 import { Button } from "@/components/ui/button";
 import { Card, StatCard } from "@/components/ui/card";
 import { FormField, SelectInput, TextAreaInput, TextInput } from "@/components/ui/form-input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { createEncounter, createMedication, createObservation, fetchPatientEncounters, fetchPatientMedications, fetchPatientObservations, fetchPatients, fetchProviders } from "@/lib/dashboard-api";
-import type { DashboardSession } from "@/lib/dashboard-api";
 import type { Encounter, Medication, Observation, Patient, Provider } from "@/types/fhir";
 
 const encounterSchema = z.object({
@@ -42,7 +42,8 @@ type EncounterFormValues = z.infer<typeof encounterSchema>;
 type ObservationFormValues = z.infer<typeof observationSchema>;
 type MedicationFormValues = z.infer<typeof medicationSchema>;
 
-export function ProviderRoleDashboard({ session }: { session: DashboardSession }) {
+export function ProviderRoleDashboard() {
+  const session = useDashboardSession();
   const [provider, setProvider] = useState<Provider | null>(null);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [selectedPatientId, setSelectedPatientId] = useState("");
