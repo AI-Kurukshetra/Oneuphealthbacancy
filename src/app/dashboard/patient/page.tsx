@@ -1,12 +1,7 @@
-"use client";
+import { PatientDashboardClient } from "./patient-dashboard-client";
 
-import { PatientRoleDashboard } from "@/components/dashboard/patient-role-dashboard";
-import { RoleDashboardPage } from "@/components/dashboard/role-dashboard-page";
+export const dynamic = "force-dynamic";
 
 export default function PatientDashboardPage() {
-  return (
-    <RoleDashboardPage role="patient">
-      <PatientRoleDashboard />
-    </RoleDashboardPage>
-  );
+  return <PatientDashboardClient />;
 }
