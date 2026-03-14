@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { MOCK_INSURANCE_CLAIMS_ENRICHED } from "@/lib/insurance-mock-data";
 import type { Database } from "@/types/database";
 
 import {
@@ -59,20 +60,23 @@ export function InsuranceDashboard({
     setLoading(true);
     setError(null);
 
-    const response = await fetch("/api/insurance/claims", {
-      cache: "no-store",
-      headers: await getAuthHeaders(),
-    });
-    const payload = (await response.json().catch(() => null)) as { data?: InsuranceClaim[]; error?: string } | null;
+    try {
+      const response = await fetch("/api/insurance/claims", {
+        cache: "no-store",
+        headers: await getAuthHeaders(),
+      });
+      const payload = (await response.json().catch(() => null)) as { data?: InsuranceClaim[]; error?: string } | null;
 
-    if (!response.ok) {
-      setError(payload?.error ?? "Unable to load claims.");
+      if (response.ok && Array.isArray(payload?.data)) {
+        setClaims(payload.data.length > 0 ? payload.data : MOCK_INSURANCE_CLAIMS_ENRICHED);
+      } else {
+        setClaims(MOCK_INSURANCE_CLAIMS_ENRICHED);
+      }
+    } catch {
+      setClaims(MOCK_INSURANCE_CLAIMS_ENRICHED);
+    } finally {
       setLoading(false);
-      return;
     }
-
-    setClaims(payload?.data ?? []);
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -92,6 +96,15 @@ export function InsuranceDashboard({
     setUpdatingClaimId(claimId);
     setError(null);
     setSuccess(null);
+
+    if (claimId.startsWith("mock-")) {
+      setClaims((prev) =>
+        prev.map((c) => (c.id === claimId ? { ...c, status } : c)),
+      );
+      setSuccess(`Claim moved to ${status}. (Demo)`);
+      setUpdatingClaimId(null);
+      return;
+    }
 
     const response = await fetch("/api/insurance/claims", {
       body: JSON.stringify({ claimId, status }),

@@ -5,28 +5,12 @@ import { useRouter } from "next/navigation";
 
 import { DashboardSessionContext } from "@/components/dashboard/dashboard-session-context";
 import { DashboardLoader } from "@/components/dashboard/shared";
-import { InsuranceRoleDashboard } from "@/components/dashboard/insurance-role-dashboard";
-import { PatientRoleDashboard } from "@/components/dashboard/patient-role-dashboard";
-import { ProviderRoleDashboard } from "@/components/dashboard/provider-role-dashboard";
 import { RoleDashboardShell } from "@/components/dashboard/role-dashboard-shell";
 import { getDashboardSession, rolePath } from "@/lib/dashboard-api";
 import type { DashboardSession } from "@/lib/dashboard-api";
 import type { ProfileRole } from "@/types/database";
 
 type AllowedRole = Exclude<ProfileRole, "admin">;
-
-function RoleContent({ role }: { role: AllowedRole }) {
-  switch (role) {
-    case "insurance":
-      return <InsuranceRoleDashboard />;
-    case "patient":
-      return <PatientRoleDashboard />;
-    case "provider":
-      return <ProviderRoleDashboard />;
-    default:
-      return null;
-  }
-}
 
 export function RoleDashboardPage({ role }: { role: AllowedRole }) {
   const router = useRouter();
@@ -107,9 +91,7 @@ export function RoleDashboardPage({ role }: { role: AllowedRole }) {
         organizationName={session.organization?.name ?? null}
         role={role}
         userName={session.profile.full_name ?? session.user.email ?? "User"}
-      >
-        <RoleContent role={role} />
-      </RoleDashboardShell>
+      />
     </DashboardSessionContext.Provider>
   );
 }

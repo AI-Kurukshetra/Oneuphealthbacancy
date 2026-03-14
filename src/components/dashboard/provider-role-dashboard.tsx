@@ -10,6 +10,13 @@ import { Button } from "@/components/ui/button";
 import { Card, StatCard } from "@/components/ui/card";
 import { FormField, SelectInput, TextAreaInput, TextInput } from "@/components/ui/form-input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  MOCK_ENCOUNTERS,
+  MOCK_MEDICATIONS,
+  MOCK_OBSERVATIONS,
+  MOCK_PATIENTS,
+  MOCK_PROVIDERS,
+} from "@/lib/provider-mock-data";
 import { createEncounter, createMedication, createObservation, fetchPatientEncounters, fetchPatientMedications, fetchPatientObservations, fetchPatients, fetchProviders } from "@/lib/dashboard-api";
 import type { Encounter, Medication, Observation, Patient, Provider } from "@/types/fhir";
 
@@ -92,12 +99,26 @@ export function ProviderRoleDashboard() {
     void (async () => {
       try {
         setLoading(true);
-        const [providerRows, patientRows] = await Promise.all([fetchProviders(), fetchPatients()]);
-        const activeProvider = providerRows.find((row) => row.user_id === session.user.id) ?? null;
+        setError(null);
+
+        let providerRows: Provider[];
+        let patientRows: Patient[];
+
+        try {
+          [providerRows, patientRows] = await Promise.all([fetchProviders(), fetchPatients()]);
+          if (providerRows.length === 0 || patientRows.length === 0) {
+            providerRows = MOCK_PROVIDERS;
+            patientRows = MOCK_PATIENTS;
+          }
+        } catch {
+          providerRows = MOCK_PROVIDERS;
+          patientRows = MOCK_PATIENTS;
+        }
+
+        const activeProvider = providerRows.find((row) => row.user_id === session.user.id) ?? providerRows[0] ?? null;
         setProvider(activeProvider);
         setPatients(patientRows);
-        const initialPatient = patientRows[0]?.id ?? "";
-        setSelectedPatientId(initialPatient);
+        setSelectedPatientId(patientRows[0]?.id ?? "");
       } catch (nextError) {
         setError(nextError instanceof Error ? nextError.message : "Unable to load provider dashboard.");
       } finally {
@@ -116,11 +137,28 @@ export function ProviderRoleDashboard() {
 
     void (async () => {
       try {
-        const [encounterRows, observationRows, medicationRows] = await Promise.all([
-          fetchPatientEncounters(selectedPatientId),
-          fetchPatientObservations(selectedPatientId),
-          fetchPatientMedications(selectedPatientId),
-        ]);
+        let encounterRows: Encounter[];
+        let observationRows: Observation[];
+        let medicationRows: Medication[];
+
+        if (selectedPatientId.startsWith("mock-")) {
+          encounterRows = MOCK_ENCOUNTERS.filter((e) => e.patient_id === selectedPatientId);
+          observationRows = MOCK_OBSERVATIONS.filter((o) => o.patient_id === selectedPatientId);
+          medicationRows = MOCK_MEDICATIONS.filter((m) => m.patient_id === selectedPatientId);
+        } else {
+          try {
+            [encounterRows, observationRows, medicationRows] = await Promise.all([
+              fetchPatientEncounters(selectedPatientId),
+              fetchPatientObservations(selectedPatientId),
+              fetchPatientMedications(selectedPatientId),
+            ]);
+          } catch {
+            encounterRows = [];
+            observationRows = [];
+            medicationRows = [];
+          }
+        }
+
         setEncounters(encounterRows);
         setObservations(observationRows);
         setMedications(medicationRows);

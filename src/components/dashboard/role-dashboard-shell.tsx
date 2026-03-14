@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Activity, ClipboardList, FileHeart, FlaskConical, HeartPulse, LogOut, Pill, Shield, Stethoscope, UserRoundSearch, UsersRound } from "lucide-react";
-import type { ReactNode } from "react";
 
+import { InsuranceRoleDashboard } from "@/components/dashboard/insurance-role-dashboard";
+import { PatientRoleDashboard } from "@/components/dashboard/patient-role-dashboard";
+import { ProviderRoleDashboard } from "@/components/dashboard/provider-role-dashboard";
 import { signOutDashboardUser } from "@/lib/dashboard-api";
 import type { ProfileRole } from "@/types/database";
 
@@ -44,13 +46,24 @@ function dashboardLabel(role: Exclude<ProfileRole, "admin">) {
   return role === "patient" ? "Patient Workspace" : role === "provider" ? "Provider Workspace" : "Insurance Workspace";
 }
 
+function RoleContent({ role }: { role: Exclude<ProfileRole, "admin"> }) {
+  switch (role) {
+    case "insurance":
+      return <InsuranceRoleDashboard />;
+    case "patient":
+      return <PatientRoleDashboard />;
+    case "provider":
+      return <ProviderRoleDashboard />;
+    default:
+      return null;
+  }
+}
+
 export function RoleDashboardShell({
-  children,
   organizationName,
   role,
   userName,
 }: {
-  children: ReactNode;
   organizationName?: string | null;
   role: Exclude<ProfileRole, "admin">;
   userName: string;
@@ -114,7 +127,9 @@ export function RoleDashboardShell({
             </div>
           </aside>
 
-          <div className="min-w-0 space-y-6">{children}</div>
+          <div className="min-w-0 space-y-6">
+            <RoleContent role={role} />
+          </div>
         </div>
       </div>
     </main>

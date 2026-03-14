@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { MOCK_PATIENTS, MOCK_PROVIDER } from "@/lib/provider-mock-data";
 import type { Database } from "@/types/database";
 
 import {
@@ -74,31 +75,41 @@ export function ProviderDashboard({ organizationName, supabase, userId }: Provid
 
   const loadData = async () => {
     setLoading(true);
-    const [{ data: providerRow }, patientsResponse] = await Promise.all([
-      supabase
-        .from("providers")
-        .select("id, user_id, name, email, specialty, organization_id, created_at")
-        .eq("user_id", userId)
-        .maybeSingle(),
-      fetch("/api/provider/patients", { cache: "no-store", headers: await getAuthHeaders() }).then(async (response) => {
-        const payload = (await response.json().catch(() => null)) as { data?: PatientRow[]; error?: string } | null;
-        if (!response.ok) {
-          throw new Error(payload?.error ?? "Unable to load patients.");
-        }
-        return payload?.data ?? [];
-      }),
-    ]);
+    setError(null);
 
-    setProvider(providerRow ?? null);
-    setPatients(patientsResponse);
-    setLoading(false);
+    try {
+      const [{ data: providerRow }, patientsResponse] = await Promise.all([
+        supabase
+          .from("providers")
+          .select("id, user_id, name, email, specialty, organization_id, created_at")
+          .eq("user_id", userId)
+          .maybeSingle(),
+        fetch("/api/provider/patients", { cache: "no-store", headers: await getAuthHeaders() }).then(async (response) => {
+          const payload = (await response.json().catch(() => null)) as { data?: PatientRow[]; error?: string } | null;
+          if (!response.ok) {
+            throw new Error(payload?.error ?? "Unable to load patients.");
+          }
+          return payload?.data ?? [];
+        }),
+      ]);
+
+      if (providerRow && (patientsResponse?.length ?? 0) > 0) {
+        setProvider(providerRow);
+        setPatients(patientsResponse);
+      } else {
+        setProvider(MOCK_PROVIDER as ProviderRow);
+        setPatients(MOCK_PATIENTS as PatientRow[]);
+      }
+    } catch {
+      setProvider(MOCK_PROVIDER as ProviderRow);
+      setPatients(MOCK_PATIENTS as PatientRow[]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
-    void loadData().catch((loadError) => {
-      setError(loadError instanceof Error ? loadError.message : "Unable to load provider dashboard.");
-      setLoading(false);
-    });
+    void loadData();
   }, [supabase, userId]);
 
   const submitWithMessage = async (runner: () => Promise<string>) => {

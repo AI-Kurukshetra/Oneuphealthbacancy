@@ -20,6 +20,7 @@ import {
 import { EncounterChart } from "@/components/charts/encounter-chart";
 import { PatientGrowth } from "@/components/charts/patient-growth";
 import { RiskChart } from "@/components/charts/risk-chart";
+import { MOCK_ADMIN_OVERVIEW } from "@/lib/admin-mock-data";
 import { ORGANIZATION_TYPES, requiresOrganization, ROLE_LABELS, USER_ROLES } from "@/lib/roles";
 import type { Alert, AnalyticsMetrics } from "@/types/ai";
 import type { Database, ProfileRole } from "@/types/database";
@@ -240,6 +241,15 @@ export function AdminDashboard({ activeSection, displayName, onSignOut, supabase
     };
   };
 
+  const applyPayload = (data: AdminOverviewPayload) => {
+    setOrganizations(data.organizations ?? []);
+    setProfiles(data.profiles ?? []);
+    setProviders(data.providers ?? []);
+    setAnalyticsMetrics(data.analytics ?? MOCK_ADMIN_OVERVIEW.analytics);
+    setClinicalAlerts(Array.isArray(data.alerts) ? data.alerts : MOCK_ADMIN_OVERVIEW.alerts);
+    setCounts(data.counts ?? MOCK_ADMIN_OVERVIEW.counts);
+  };
+
   const loadData = async () => {
     setLoading(true);
     setOrgError(null);
@@ -255,24 +265,28 @@ export function AdminDashboard({ activeSection, displayName, onSignOut, supabase
           }
         | null;
 
-      if (!response.ok || !payload?.success || !payload.data) {
-        throw new Error(payload?.error ?? "Unable to load admin data.");
-      }
+      if (response.ok && payload?.success && payload.data) {
+        const data = payload.data;
+        const isEmpty =
+          (data.organizations?.length ?? 0) === 0 &&
+          (data.profiles?.length ?? 0) === 0 &&
+          (data.providers?.length ?? 0) === 0 &&
+          (data.counts?.patients ?? 0) === 0;
 
-      setOrganizations(payload.data.organizations);
-      setProfiles(payload.data.profiles);
-      setProviders(payload.data.providers);
-      setAnalyticsMetrics(payload.data.analytics);
-      setClinicalAlerts(payload.data.alerts);
-      setCounts(payload.data.counts);
-    } catch (error) {
-      setOrgError(error instanceof Error ? error.message : "Unable to load admin data.");
-      setOrganizations([]);
-      setProfiles([]);
-      setProviders([]);
-      setAnalyticsMetrics(null);
-      setClinicalAlerts([]);
-      setCounts({ organizations: 0, patients: 0, providers: 0, users: 0 });
+        if (isEmpty) {
+          applyPayload(MOCK_ADMIN_OVERVIEW);
+        } else {
+          applyPayload({
+            ...data,
+            alerts: Array.isArray(data.alerts) ? data.alerts : MOCK_ADMIN_OVERVIEW.alerts,
+            analytics: data.analytics ?? MOCK_ADMIN_OVERVIEW.analytics,
+          });
+        }
+      } else {
+        applyPayload(MOCK_ADMIN_OVERVIEW);
+      }
+    } catch {
+      applyPayload(MOCK_ADMIN_OVERVIEW);
     } finally {
       setLoading(false);
     }
@@ -363,50 +377,49 @@ export function AdminDashboard({ activeSection, displayName, onSignOut, supabase
 
   const renderMonitorSection = () => (
     <div className="space-y-6">
-      <section className="overflow-hidden rounded-[2rem] border border-cyan-100 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.98),_rgba(240,249,255,0.94)_46%,_rgba(230,247,255,0.95)_100%)] shadow-[0_24px_90px_rgba(14,116,144,0.12)]">
-        <div className="grid gap-8 px-6 py-7 xl:grid-cols-[1.25fr_0.9fr] xl:px-8 xl:py-8">
-          <div className="space-y-6">
+      <section className="overflow-hidden rounded-2xl border border-cyan-100/80 bg-gradient-to-br from-cyan-50/60 via-white to-teal-50/40 shadow-[0_4px_24px_rgba(6,182,212,0.08)]">
+        <div className="grid gap-6 px-6 py-6 xl:grid-cols-[1.2fr_1fr] xl:px-8 xl:py-8">
+          <div className="space-y-5">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-cyan-800 ring-1 ring-inset ring-cyan-200">
+              <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-700 shadow-sm ring-1 ring-cyan-200/60">
                 <Sparkles className="h-3.5 w-3.5" />
                 Admin Operations
               </span>
-              <span className="inline-flex items-center gap-2 rounded-full bg-cyan-950 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-50">
+              <span className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-white">
                 <ShieldCheck className="h-3.5 w-3.5" />
                 Control surface
               </span>
             </div>
-            <div className="space-y-3">
-              <h2 className="max-w-3xl text-3xl font-semibold tracking-tight text-slate-950 lg:text-[2.35rem]">
-                Monitor platform readiness across providers, organizations, and user-role coverage.
+            <div className="space-y-2">
+              <h2 className="max-w-2xl text-2xl font-bold tracking-tight text-slate-950 lg:text-3xl">
+                Platform readiness at a glance
               </h2>
-              <p className="max-w-2xl text-sm leading-7 text-slate-600">
-                The sidebar now owns navigation so the main canvas can focus on high-signal operational insights instead of
-                squeezing every admin function into one page.
+              <p className="max-w-xl text-sm leading-7 text-slate-600">
+                Track adoption, role coverage, and operational readiness across providers, organizations, and users.
               </p>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-3">
-              <div className="rounded-3xl border border-white/70 bg-white/85 p-4 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Role Coverage</p>
+              <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm transition hover:shadow-md">
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">Role Coverage</p>
                 <div className="mt-3 space-y-2 text-sm text-slate-700">
-                  <p className="flex items-center justify-between"><span>Admins</span><span className="font-semibold text-slate-950">{roleDistribution.admin}</span></p>
-                  <p className="flex items-center justify-between"><span>Providers</span><span className="font-semibold text-slate-950">{roleDistribution.provider}</span></p>
-                  <p className="flex items-center justify-between"><span>Insurance</span><span className="font-semibold text-slate-950">{roleDistribution.insurance}</span></p>
+                  <p className="flex items-center justify-between"><span>Admins</span><span className="font-bold text-slate-950">{roleDistribution.admin}</span></p>
+                  <p className="flex items-center justify-between"><span>Providers</span><span className="font-bold text-slate-950">{roleDistribution.provider}</span></p>
+                  <p className="flex items-center justify-between"><span>Insurance</span><span className="font-bold text-slate-950">{roleDistribution.insurance}</span></p>
                 </div>
               </div>
-              <div className="rounded-3xl border border-white/70 bg-white/85 p-4 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Organization Mix</p>
+              <div className="rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm transition hover:shadow-md">
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">Organization Mix</p>
                 <div className="mt-3 space-y-2 text-sm text-slate-700">
-                  <p className="flex items-center justify-between"><span>Hospitals</span><span className="font-semibold text-slate-950">{organizationMix.hospitals}</span></p>
-                  <p className="flex items-center justify-between"><span>Clinics</span><span className="font-semibold text-slate-950">{organizationMix.clinics}</span></p>
-                  <p className="flex items-center justify-between"><span>Payers</span><span className="font-semibold text-slate-950">{organizationMix.insurance}</span></p>
+                  <p className="flex items-center justify-between"><span>Hospitals</span><span className="font-bold text-slate-950">{organizationMix.hospitals}</span></p>
+                  <p className="flex items-center justify-between"><span>Clinics</span><span className="font-bold text-slate-950">{organizationMix.clinics}</span></p>
+                  <p className="flex items-center justify-between"><span>Payers</span><span className="font-bold text-slate-950">{organizationMix.insurance}</span></p>
                 </div>
               </div>
-              <div className="rounded-3xl border border-cyan-200 bg-cyan-950 p-4 text-cyan-50 shadow-sm">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-200">Action Focus</p>
-                <p className="mt-3 text-sm leading-6 text-cyan-50/90">
-                  Move between providers, organizations, users, and usage analytics from the sidebar without losing context.
+              <div className="rounded-xl border border-cyan-200/80 bg-gradient-to-br from-cyan-700 to-teal-700 p-4 text-white shadow-md">
+                <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-cyan-100">Quick nav</p>
+                <p className="mt-3 text-sm leading-6 text-white/95">
+                  Use the sidebar to switch between providers, organizations, users, and analytics.
                 </p>
               </div>
             </div>
@@ -428,12 +441,17 @@ export function AdminDashboard({ activeSection, displayName, onSignOut, supabase
           ) : (
             <div className="space-y-3">
               {organizations.slice(0, 4).map((organization) => (
-                <div key={organization.id} className="flex items-center justify-between rounded-3xl border border-slate-200 bg-slate-50 px-4 py-4">
-                  <div>
-                    <p className="font-semibold text-slate-950">{organization.name}</p>
-                    <p className="mt-1 text-sm text-slate-600">{organization.address ?? "No address set"}</p>
+                <div key={organization.id} className="group flex items-center justify-between rounded-xl border border-slate-200/80 bg-white px-4 py-4 shadow-sm transition hover:shadow-md">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-cyan-50 text-cyan-600">
+                      <Building2 className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-slate-950">{organization.name}</p>
+                      <p className="mt-0.5 text-sm text-slate-600">{organization.address ?? "No address set"}</p>
+                    </div>
                   </div>
-                  <span className={`rounded-full px-3 py-1 text-xs font-semibold capitalize ${organizationTypeClassName(organization.type)}`}>
+                  <span className={`rounded-lg px-3 py-1.5 text-xs font-semibold capitalize ${organizationTypeClassName(organization.type)}`}>
                     {organization.type}
                   </span>
                 </div>
@@ -448,19 +466,21 @@ export function AdminDashboard({ activeSection, displayName, onSignOut, supabase
           ) : (
             <div className="space-y-3">
               {providersWithOrganizations.slice(0, 4).map((provider) => (
-                <div key={provider.id} className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
+                <div key={provider.id} className="group rounded-xl border border-slate-200/80 bg-white p-4 shadow-sm transition hover:shadow-md">
                   <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="font-semibold text-slate-950">{provider.name ?? "Unnamed provider"}</p>
-                      <p className="mt-1 text-sm text-slate-600">{provider.email ?? "No email"}</p>
-                    </div>
-                    <div className="rounded-2xl bg-cyan-50 p-2 text-cyan-700">
-                      <BriefcaseMedical className="h-5 w-5" />
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-cyan-50 text-cyan-600">
+                        <BriefcaseMedical className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <p className="font-semibold text-slate-950">{provider.name ?? "Unnamed provider"}</p>
+                        <p className="mt-0.5 text-sm text-slate-600">{provider.email ?? "No email"}</p>
+                      </div>
                     </div>
                   </div>
                   <div className="mt-4 flex flex-wrap gap-2 text-sm text-slate-600">
-                    <span className="rounded-full bg-slate-100 px-3 py-1">Specialty: {provider.specialty ?? "Not set"}</span>
-                    <span className="rounded-full bg-slate-100 px-3 py-1">Organization: {provider.organizationName}</span>
+                    <span className="rounded-lg bg-slate-50 px-3 py-1.5 text-slate-700">Specialty: {provider.specialty ?? "Not set"}</span>
+                    <span className="rounded-lg bg-slate-50 px-3 py-1.5 text-slate-700">Org: {provider.organizationName}</span>
                   </div>
                 </div>
               ))}
@@ -473,15 +493,15 @@ export function AdminDashboard({ activeSection, displayName, onSignOut, supabase
 
   const renderOrganizationsSection = () => (
     <div className="space-y-6">
-      <section className="rounded-[2rem] border border-cyan-100 bg-[linear-gradient(180deg,rgba(236,254,255,0.95),rgba(255,255,255,1))] p-6 shadow-[0_18px_60px_rgba(8,145,178,0.12)]">
+      <section className="overflow-hidden rounded-2xl border border-cyan-100/80 bg-gradient-to-br from-cyan-50/50 via-white to-white p-6 shadow-[0_4px_24px_rgba(6,182,212,0.06)] lg:p-7">
         <div className="space-y-2">
-          <div className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-cyan-800 ring-1 ring-inset ring-cyan-200">
+          <div className="inline-flex items-center gap-2 rounded-full bg-white px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-700 shadow-sm ring-1 ring-cyan-200/60">
             <Building2 className="h-3.5 w-3.5" />
             Network Setup
           </div>
-          <h3 className="text-2xl font-semibold tracking-tight text-slate-950">Create organizations from a dedicated workspace</h3>
+          <h3 className="text-xl font-bold tracking-tight text-slate-950 lg:text-2xl">Create organizations</h3>
           <p className="text-sm leading-6 text-slate-600">
-            Provider and payer entities are now managed from their own route so the form and listing can use the full content area.
+            Provider and payer entities are managed from this workspace. Each organization becomes available for provider and insurance onboarding.
           </p>
         </div>
 
@@ -519,7 +539,7 @@ export function AdminDashboard({ activeSection, displayName, onSignOut, supabase
             />
           </FormField>
 
-          <div className="lg:col-span-3 flex items-center justify-between gap-4 border-t border-cyan-200 pt-4">
+          <div className="lg:col-span-3 flex flex-col gap-4 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-between">
             <div className="text-sm text-slate-500">Each organization becomes immediately available in provider and insurance onboarding.</div>
             <PrimaryButton className="sm:w-auto" disabled={submittingOrg} type="submit">
               {submittingOrg ? "Saving..." : "Create organization"}
@@ -547,23 +567,23 @@ export function AdminDashboard({ activeSection, displayName, onSignOut, supabase
             {organizations.map((organization) => (
               <div
                 key={organization.id}
-                className="group rounded-[1.75rem] border border-slate-200 bg-[linear-gradient(180deg,#ffffff,#f8fbfd)] p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-[0_18px_40px_rgba(15,23,42,0.08)]"
+                className="group rounded-xl border border-slate-200/80 bg-white p-5 shadow-sm transition-all hover:shadow-[0_8px_30px_rgba(15,23,42,0.08)]"
               >
                 <div className="flex items-start justify-between gap-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-700">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-50 text-cyan-600">
                     <Building2 className="h-5 w-5" />
                   </div>
-                  <span className={`rounded-full px-3 py-1 text-xs font-semibold capitalize ${organizationTypeClassName(organization.type)}`}>
+                  <span className={`rounded-lg px-3 py-1.5 text-xs font-semibold capitalize ${organizationTypeClassName(organization.type)}`}>
                     {organization.type}
                   </span>
                 </div>
-                <div className="mt-5 space-y-2">
-                  <p className="text-lg font-semibold text-slate-950">{organization.name}</p>
-                  <p className="min-h-12 text-sm leading-6 text-slate-600">{organization.address ?? "Address not set yet."}</p>
+                <div className="mt-4 space-y-2">
+                  <p className="text-base font-semibold text-slate-950">{organization.name}</p>
+                  <p className="min-h-10 text-sm leading-6 text-slate-600">{organization.address ?? "Address not set yet."}</p>
                 </div>
-                <div className="mt-5 flex items-center justify-between border-t border-slate-200 pt-4 text-sm text-slate-500">
+                <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4 text-sm text-slate-500">
                   <span>Created {new Date(organization.created_at).toLocaleDateString()}</span>
-                  <span className="inline-flex items-center gap-1 font-medium text-cyan-800">
+                  <span className="inline-flex items-center gap-1 font-medium text-cyan-700">
                     Ready <ArrowRight className="h-4 w-4 transition group-hover:translate-x-0.5" />
                   </span>
                 </div>
@@ -595,20 +615,22 @@ export function AdminDashboard({ activeSection, displayName, onSignOut, supabase
         ) : (
           <div className="grid gap-4 lg:grid-cols-2">
             {providersWithOrganizations.map((provider) => (
-              <div key={provider.id} className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm">
+              <div key={provider.id} className="group rounded-xl border border-slate-200/80 bg-white p-5 shadow-sm transition-all hover:shadow-md">
                 <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="text-lg font-semibold text-slate-950">{provider.name ?? "Unnamed provider"}</p>
-                    <p className="mt-1 text-sm text-slate-600">{provider.email ?? "No email"}</p>
-                  </div>
-                  <div className="rounded-2xl bg-cyan-50 p-2 text-cyan-700">
-                    <BriefcaseMedical className="h-5 w-5" />
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-cyan-50 text-cyan-600">
+                      <BriefcaseMedical className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="text-base font-semibold text-slate-950">{provider.name ?? "Unnamed provider"}</p>
+                      <p className="mt-0.5 text-sm text-slate-600">{provider.email ?? "No email"}</p>
+                    </div>
                   </div>
                 </div>
-                <div className="mt-5 grid gap-2 text-sm text-slate-600">
-                  <p className="rounded-2xl bg-slate-50 px-3 py-2">Specialty: {provider.specialty ?? "Not set"}</p>
-                  <p className="rounded-2xl bg-slate-50 px-3 py-2">Organization: {provider.organizationName}</p>
-                  <p className="rounded-2xl bg-slate-50 px-3 py-2">
+                <div className="mt-4 grid gap-2 text-sm text-slate-600">
+                  <p className="rounded-lg bg-slate-50 px-3 py-2 text-slate-700">Specialty: {provider.specialty ?? "Not set"}</p>
+                  <p className="rounded-lg bg-slate-50 px-3 py-2 text-slate-700">Organization: {provider.organizationName}</p>
+                  <p className="rounded-lg bg-slate-50 px-3 py-2 text-slate-700">
                     Linked user: {provider.user_id ? `${provider.user_id.slice(0, 8)}...` : "No linked auth user"}
                   </p>
                 </div>
@@ -622,8 +644,8 @@ export function AdminDashboard({ activeSection, displayName, onSignOut, supabase
 
   const renderAnalyticsSection = () => (
     <div className="space-y-6">
-      <section className="overflow-hidden rounded-[2rem] border border-cyan-100 bg-[radial-gradient(circle_at_top_left,_rgba(255,255,255,0.99),_rgba(236,254,255,0.94)_46%,_rgba(240,249,255,0.95)_100%)] p-6 shadow-[0_24px_90px_rgba(14,116,144,0.12)]">
-        <div className="grid gap-4 xl:grid-cols-4">
+      <section className="overflow-hidden rounded-2xl border border-cyan-100/80 bg-gradient-to-br from-cyan-50/50 via-white to-teal-50/30 p-6 shadow-[0_4px_24px_rgba(6,182,212,0.06)]">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <MetricCard label="Total Patients" value={analyticsMetrics?.total_patients ?? 0} />
           <MetricCard label="Total Encounters" value={analyticsMetrics?.total_encounters ?? 0} />
           <MetricCard label="Total Claims" value={analyticsMetrics?.total_claims ?? 0} />
@@ -657,14 +679,14 @@ export function AdminDashboard({ activeSection, displayName, onSignOut, supabase
             ) : (
               <div className="grid gap-4 lg:grid-cols-2">
                 {clinicalAlerts.slice(0, 10).map((alert) => (
-                  <div key={alert.id} className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
+                  <div key={alert.id} className="rounded-xl border border-slate-200/80 bg-white p-5 shadow-sm transition hover:shadow-md">
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <p className="text-base font-semibold capitalize text-slate-950">{alert.alert_type.replaceAll("_", " ")}</p>
                         <p className="mt-1 text-sm text-slate-500">Patient ID: {alert.patient_id}</p>
                       </div>
                       <span
-                        className={`rounded-full px-3 py-1 text-xs font-semibold capitalize ${
+                        className={`rounded-lg px-3 py-1.5 text-xs font-semibold capitalize ${
                           alert.severity === "high"
                             ? "bg-rose-100 text-rose-700"
                             : alert.severity === "medium"
@@ -689,21 +711,21 @@ export function AdminDashboard({ activeSection, displayName, onSignOut, supabase
 
   const renderUsersSection = () => (
     <div className="space-y-6">
-      <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_18px_60px_rgba(15,23,42,0.08)]">
-        <div className="flex items-start justify-between gap-4">
+      <section className="overflow-hidden rounded-2xl border border-slate-200/80 bg-gradient-to-br from-white to-slate-50/30 p-6 shadow-[0_4px_24px_rgba(15,23,42,0.06)] lg:p-7">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 rounded-full bg-cyan-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.16em] text-cyan-800">
+            <div className="inline-flex items-center gap-2 rounded-full bg-cyan-50 px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-700">
               <UserPlus className="h-3.5 w-3.5" />
               Workforce Provisioning
             </div>
-            <h3 className="text-2xl font-semibold tracking-tight text-slate-950">Create users and assign access from one route</h3>
+            <h3 className="text-xl font-bold tracking-tight text-slate-950 lg:text-2xl">Create users and assign access</h3>
             <p className="max-w-2xl text-sm leading-6 text-slate-600">
               Create admins, providers, payers, or patients with either invite email or direct temporary-password access.
             </p>
           </div>
-          <div className="hidden rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-right lg:block">
-            <p className="text-xs uppercase tracking-[0.16em] text-slate-500">Supported roles</p>
-            <p className="mt-2 text-lg font-semibold text-slate-950">{USER_ROLES.length}</p>
+          <div className="flex shrink-0 rounded-xl border border-slate-200/80 bg-white px-4 py-3 shadow-sm">
+            <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Supported roles</p>
+            <p className="mt-2 text-2xl font-bold text-slate-950">{USER_ROLES.length}</p>
           </div>
         </div>
 
@@ -791,7 +813,7 @@ export function AdminDashboard({ activeSection, displayName, onSignOut, supabase
             </select>
           </FormField>
 
-          <div className="lg:col-span-2 flex flex-col gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="lg:col-span-2 flex flex-col gap-4 border-t border-slate-200 pt-5 sm:flex-row sm:items-center sm:justify-between">
             <div className="text-sm text-slate-500">
               Provider and insurance users require organization assignment before provisioning.
             </div>
@@ -825,17 +847,22 @@ export function AdminDashboard({ activeSection, displayName, onSignOut, supabase
             {profiles.map((profile) => (
               <div
                 key={profile.id}
-                className="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-slate-50/70 px-4 py-4 md:flex-row md:items-center md:justify-between"
+                className="flex flex-col gap-3 rounded-xl border border-slate-200/80 bg-white px-4 py-4 shadow-sm transition hover:shadow-md md:flex-row md:items-center md:justify-between"
               >
-                <div className="space-y-1">
-                  <p className="font-semibold text-slate-950">{profile.full_name ?? "Not set"}</p>
-                  <p className="text-sm text-slate-600">{profile.email ?? "Not set"}</p>
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
+                    <Users className="h-5 w-5" />
+                  </div>
+                  <div className="space-y-0.5">
+                    <p className="font-semibold text-slate-950">{profile.full_name ?? "Not set"}</p>
+                    <p className="text-sm text-slate-600">{profile.email ?? "Not set"}</p>
+                  </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className={`rounded-full px-3 py-1 text-xs font-semibold capitalize ${roleBadgeClassName(profile.role)}`}>
+                  <span className={`rounded-lg px-3 py-1.5 text-xs font-semibold capitalize ${roleBadgeClassName(profile.role)}`}>
                     {profile.role}
                   </span>
-                  <span className="rounded-full bg-white px-3 py-1 text-xs font-medium text-slate-600 ring-1 ring-inset ring-slate-200">
+                  <span className="rounded-lg bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-600">
                     {organizationNameById.get(profile.organization_id ?? "") ?? "Unassigned"}
                   </span>
                 </div>
@@ -864,20 +891,20 @@ export function AdminDashboard({ activeSection, displayName, onSignOut, supabase
   };
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[340px_minmax(0,1fr)] 2xl:grid-cols-[360px_minmax(0,1fr)]">
-      <aside className="h-fit rounded-[2rem] border border-slate-200 bg-[linear-gradient(180deg,#ffffff,#f6fbff)] p-6 shadow-[0_18px_60px_rgba(15,23,42,0.06)] xl:sticky xl:top-6">
+    <div className="grid gap-6 xl:grid-cols-[320px_minmax(0,1fr)] 2xl:grid-cols-[340px_minmax(0,1fr)]">
+      <aside className="h-fit rounded-2xl border border-slate-200/80 bg-white/90 p-5 shadow-[0_4px_24px_rgba(15,23,42,0.06)] backdrop-blur-sm xl:sticky xl:top-6">
         <div className="space-y-4">
-          <div className="rounded-[1.5rem] border border-cyan-100 bg-[linear-gradient(180deg,rgba(236,254,255,0.95),rgba(255,255,255,1))] p-4">
-            <div className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-cyan-800 ring-1 ring-inset ring-cyan-200">
+          <div className="rounded-xl border border-cyan-100/80 bg-gradient-to-br from-cyan-50/80 to-white p-4">
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-700 shadow-sm">
               <ShieldCheck className="h-3.5 w-3.5" />
               Admin Console
             </div>
-            <h2 className="mt-4 text-2xl font-semibold tracking-tight text-slate-950">{displayName}</h2>
-            <p className="mt-2 text-[15px] leading-7 text-slate-600">
-              Sidebar-based admin workspace with route-level navigation for platform operations.
+            <h2 className="mt-3 text-xl font-bold tracking-tight text-slate-950">{displayName}</h2>
+            <p className="mt-1.5 text-sm leading-6 text-slate-600">
+              Platform operations at a glance.
             </p>
             <button
-              className="mt-4 inline-flex items-center gap-2 rounded-2xl border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+              className="mt-4 inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition-all hover:border-slate-300 hover:bg-slate-50"
               onClick={() => void onSignOut()}
               type="button"
             >
@@ -886,7 +913,7 @@ export function AdminDashboard({ activeSection, displayName, onSignOut, supabase
             </button>
           </div>
 
-          <nav className="space-y-2">
+          <nav className="space-y-1.5">
             {ADMIN_NAV.map((item) => {
               const Icon = item.icon;
               const isActive = item.key === activeSection;
@@ -894,24 +921,24 @@ export function AdminDashboard({ activeSection, displayName, onSignOut, supabase
               return (
                 <Link
                   key={item.key}
-                  className={`block rounded-[1.5rem] border px-4 py-4 transition ${
+                  className={`group block rounded-xl px-4 py-3.5 transition-all duration-200 ${
                     isActive
-                      ? "border-cyan-200 bg-cyan-50 shadow-sm"
-                      : "border-slate-200 bg-white hover:border-cyan-100 hover:bg-slate-50"
+                      ? "bg-gradient-to-r from-cyan-500/10 to-teal-500/10 ring-1 ring-cyan-200/60"
+                      : "hover:bg-slate-50"
                   }`}
                   href={item.href}
                 >
                   <div className="flex items-start gap-3">
                     <div
-                      className={`mt-0.5 rounded-2xl p-2 ${
-                        isActive ? "bg-cyan-600 text-white" : "bg-slate-100 text-slate-600"
+                      className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors ${
+                        isActive ? "bg-cyan-600 text-white shadow-md" : "bg-slate-100 text-slate-600 group-hover:bg-slate-200"
                       }`}
                     >
                       <Icon className="h-4 w-4" />
                     </div>
-                    <div className="space-y-1">
-                      <p className={`text-[15px] font-semibold ${isActive ? "text-cyan-950" : "text-slate-900"}`}>{item.label}</p>
-                      <p className="text-sm leading-6 text-slate-500">{item.description}</p>
+                    <div className="min-w-0 flex-1 space-y-0.5">
+                      <p className={`text-sm font-semibold ${isActive ? "text-cyan-900" : "text-slate-800"}`}>{item.label}</p>
+                      <p className="line-clamp-2 text-xs leading-5 text-slate-500">{item.description}</p>
                     </div>
                   </div>
                 </Link>
@@ -919,26 +946,26 @@ export function AdminDashboard({ activeSection, displayName, onSignOut, supabase
             })}
           </nav>
 
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-            <div className="rounded-3xl border border-slate-200 bg-white p-4">
+          <div className="space-y-2">
+            <div className="rounded-xl border border-slate-200/80 bg-white p-3.5 shadow-sm transition hover:shadow-md">
               <div className="flex items-center gap-3">
-                <div className="rounded-2xl bg-cyan-50 p-2 text-cyan-700">
-                  <BadgeCheck className="h-5 w-5" />
+                <div className="rounded-lg bg-cyan-50 p-2 text-cyan-600">
+                  <BadgeCheck className="h-4 w-4" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-slate-950">Temporary-password onboarding</p>
-                  <p className="text-xs leading-5 text-slate-500">Avoid invite email rate limits during rapid testing.</p>
+                  <p className="text-xs font-semibold text-slate-800">Quick onboarding</p>
+                  <p className="text-[11px] leading-4 text-slate-500">Temporary passwords for rapid testing.</p>
                 </div>
               </div>
             </div>
-            <div className="rounded-3xl border border-slate-200 bg-white p-4">
+            <div className="rounded-xl border border-slate-200/80 bg-white p-3.5 shadow-sm transition hover:shadow-md">
               <div className="flex items-center gap-3">
-                <div className="rounded-2xl bg-emerald-50 p-2 text-emerald-700">
-                  <Hospital className="h-5 w-5" />
+                <div className="rounded-lg bg-emerald-50 p-2 text-emerald-600">
+                  <Hospital className="h-4 w-4" />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-slate-950">Organization-aware routing</p>
-                  <p className="text-xs leading-5 text-slate-500">Use dedicated pages for cleaner workflows and more usable space.</p>
+                  <p className="text-xs font-semibold text-slate-800">Org routing</p>
+                  <p className="text-[11px] leading-4 text-slate-500">Dedicated pages for workflows.</p>
                 </div>
               </div>
             </div>
@@ -947,21 +974,21 @@ export function AdminDashboard({ activeSection, displayName, onSignOut, supabase
       </aside>
 
       <div className="space-y-6">
-        <section className="rounded-[2rem] border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+        <section className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-6 shadow-[0_1px_3px_rgba(0,0,0,0.04)] lg:p-7">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-slate-600">
+              <div className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-cyan-50 to-teal-50 px-3.5 py-1.5 text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-800">
                 <Sparkles className="h-3.5 w-3.5" />
                 Admin Route
               </div>
-              <h1 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950 xl:text-[2.6rem]">{sectionTitle(activeSection)}</h1>
-              <p className="mt-2 max-w-3xl text-[15px] leading-7 text-slate-600">{sectionDescription(activeSection)}</p>
+              <h1 className="mt-3 text-2xl font-bold tracking-tight text-slate-950 lg:text-3xl">{sectionTitle(activeSection)}</h1>
+              <p className="mt-2 max-w-2xl text-[15px] leading-7 text-slate-600">{sectionDescription(activeSection)}</p>
             </div>
-            <div className="flex flex-wrap gap-3">
-              <span className="rounded-full bg-cyan-50 px-4 py-2 text-sm font-medium text-cyan-800 ring-1 ring-inset ring-cyan-200">
-                Organizations: {counts.organizations}
+            <div className="flex flex-wrap gap-2">
+              <span className="rounded-lg bg-cyan-50 px-3.5 py-2 text-sm font-medium text-cyan-800 ring-1 ring-cyan-200/60">
+                Orgs: {counts.organizations}
               </span>
-              <span className="rounded-full bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700">
+              <span className="rounded-lg bg-slate-100 px-3.5 py-2 text-sm font-medium text-slate-700">
                 Users: {counts.users}
               </span>
             </div>

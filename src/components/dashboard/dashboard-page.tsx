@@ -208,7 +208,7 @@ export function DashboardPage() {
     }
 
     return (
-      <main className="py-10">
+      <main className="admin-dashboard-bg min-h-screen py-10">
         <div className="w-full px-4 sm:px-6 lg:px-8 xl:px-10 2xl:px-12">
           <div className="space-y-6">
             {error ? <p className="text-sm text-rose-600">{error}</p> : null}

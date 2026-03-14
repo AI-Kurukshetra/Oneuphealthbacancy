@@ -12,6 +12,13 @@
   }
 }
 
+/* Admin dashboard subtle background pattern */
+.admin-dashboard-bg {
+  background-image: radial-gradient(at 40% 20%, rgba(6, 182, 212, 0.04) 0px, transparent 50%),
+    radial-gradient(at 80% 0%, rgba(20, 184, 166, 0.03) 0px, transparent 50%),
+    radial-gradient(at 0% 50%, rgba(14, 165, 233, 0.03) 0px, transparent 50%);
+}
+
 @layer components {
   .container {
     @apply mx-auto w-full px-4 sm:px-6 lg:px-8;
