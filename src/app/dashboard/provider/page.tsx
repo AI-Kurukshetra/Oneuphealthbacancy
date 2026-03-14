@@ -1,3 +1,5 @@
+"use client";
+
 import { ProviderRoleDashboard } from "@/components/dashboard/provider-role-dashboard";
 import { RoleDashboardPage } from "@/components/dashboard/role-dashboard-page";
 
