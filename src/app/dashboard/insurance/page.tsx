@@ -1,7 +1,7 @@
-import { InsuranceDashboardClient } from "./insurance-dashboard-client";
+import { RoleDashboardPage } from "@/components/dashboard/role-dashboard-page";
 
 export const dynamic = "force-dynamic";
 
 export default function InsuranceDashboardPage() {
-  return <InsuranceDashboardClient />;
+  return <RoleDashboardPage role="insurance" />;
 }

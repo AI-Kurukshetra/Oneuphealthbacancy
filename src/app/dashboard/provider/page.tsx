@@ -1,7 +1,7 @@
-import { ProviderDashboardClient } from "./provider-dashboard-client";
+import { RoleDashboardPage } from "@/components/dashboard/role-dashboard-page";
 
 export const dynamic = "force-dynamic";
 
 export default function ProviderDashboardPage() {
-  return <ProviderDashboardClient />;
+  return <RoleDashboardPage role="provider" />;
 }
